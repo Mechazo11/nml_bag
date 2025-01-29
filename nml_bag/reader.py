@@ -1,4 +1,6 @@
-""" Functionality for reading ROS2 bag files.
+""" 
+
+Functionality for reading ROS2 bag files.
 
 ROS2 facilitates data recording and playback via bag_ files. This package 
 provides functionality for extracting data stored in bag files, and translating 
@@ -42,7 +44,6 @@ from rosbag2_py import StorageFilter
 from nml_bag import message as message_manipulation
 
 
-#
 class Reader(SequentialReader):
     """ A ROS2 bag sequential reader class with an iterator interface that 
         automatically converts messages to standard Python builtin data types.
@@ -73,76 +74,24 @@ class Reader(SequentialReader):
         .. _constructor: https://github.com/ros2/rosbag2/blob
                          /fada54cc2c93d4238f3971e9ce6ea0006ac85c8c/rosbag2_cpp
                          /src/rosbag2_cpp/readers/sequential_reader.cpp#L60
+                  
+    """  # noqa: D205, D210, D213, D412, W293
     
-    Notes
-    -----
-    
-    In the current version of the ROS2 bag package, ``seek`` functionality has 
-    not yet been implemented_. Until this is implemented, we recommend opening 
-    a new :py:class`Reader` each time the position is to be reset.
-    
-    .. todo: Consider deriving this class from Iterator_ of the 
-             `collections.abc` package. Multiple inheritence and the ABC 
-             metaclass will conflict, so perhaps it should be distinct.
-    
-    .. _implemented: https://github.com/ros2/rosbag2/blob
-                     /fada54cc2c93d4238f3971e9ce6ea0006ac85c8c/rosbag2_cpp
-                     /src/rosbag2_cpp/readers/sequential_reader.cpp#L198
-    .. _Iterator: https://docs.python.org/3/library
-                  /collections.abc.html#collections-abstract-base-classes
-
-    Examples
-    --------
-    This example writes_ a sample bag file in a temporary directory, and then 
-    uses the Reader class to parse the file.
-    
-    >>> import tempfile
-    >>> tempdir = tempfile.TemporaryDirectory()
-    >>> from os import sep
-    >>> bag_path = f'{tempdir.name}{sep}bag_test'
-    >>> import rosbag2_py
-    >>> storage_options = rosbag2_py.StorageOptions(uri=bag_path,
-    ...                                             max_cache_size=0,
-    ...                                             storage_id='sqlite3')
-    >>> converter_options = rosbag2_py.ConverterOptions('', '')
-    >>> writer = rosbag2_py.SequentialWriter()
-    >>> writer.open(storage_options, converter_options)
-    >>> topic_metadata \\
-    ...   = rosbag2_py.TopicMetadata(name='test_topic',
-    ...                              type='example_interfaces/msg/String',
-    ...                              serialization_format='cdr')
-    >>> writer.create_topic(topic_metadata)
-    >>> import rclpy.clock
-    >>> clock = rclpy.clock.Clock()
-    >>> from example_interfaces import msg
-    >>> message = msg.String(data='Hello World!')
-    >>> from rclpy.serialization import serialize_message
-    >>> writer.write('test_topic', 
-    ...              serialize_message(message), 
-    ...              clock.now().nanoseconds)
-    >>> message.data = 'Goodybye World!'
-    >>> writer.write('test_topic', 
-    ...              serialize_message(message), 
-    ...              clock.now().nanoseconds)
-    >>> reader = Reader(f'{bag_path}{sep}bag_test_0.db3', storage_id='sqlite3', serialization_format='cdr')
-    >>> reader.topics
-    ['test_topic']
-    >>> reader.type_map
-    {'test_topic': 'example_interfaces/msg/String'}
-    >>> reader.records
-    [{'topic': 'test_topic', 'time_ns': ..., 'data': 'Hello World!'}, 
-     {'topic': 'test_topic', 'time_ns': ..., 'data': 'Goodybye World!'}]
-    >>> tempdir.cleanup()
-    
-    .. _writes: https://docs.ros.org/en/galactic/Tutorials/Ros2bag
-                /Recording-A-Bag-From-Your-Own-Node-Python.html
-                #write-the-python-node
-    """
-    
-    def __init__(self, filepath=None, topics=[], storage_id='mcap', serialization_format='cdr', **kwargs):
+    def __init__(self, filepath=None, topics=[], storage_id='mcap', 
+                 serialization_format='cdr', get_msg_count = False ,**kwargs):
         super().__init__(**kwargs) # SequentialReader
-        if filepath: self.open(filepath, storage_id=storage_id, serialization_format=serialization_format)
+        if filepath: self.open(filepath, storage_id=storage_id, 
+                               serialization_format=serialization_format)
         if topics: self.set_filter(topics)
+        
+        # Keep instance wise records
+        self.topics_list = topics
+        self._msg_count_dict = {}
+
+        # print message counts
+        if get_msg_count:
+            self.get_msg_count()
+
         
     def open(self, filepath, storage_id='mcap', serialization_format='cdr'):
         """ Open a bag file.
@@ -225,7 +174,25 @@ class Reader(SequentialReader):
             A list of the topics to include.
         """
         super().set_filter(StorageFilter(topics))
+    
+    @property
+    def msg_count_dict(self):
+        """
+        Getter for msg_count_dict.
+        """
+        return self._msg_count_dict
+
+    def get_msg_count(self):
+        """For the given topics, count and return number of messages as a dictionary"""
         
+        self._msg_count_dict = {}  # Reset the dictionary
+        # Iterate through all messages
+        while self.has_next():
+            (topic, _, _) = self.read_next()
+            if topic in self.topics_list:
+                self._msg_count_dict[topic] = self._msg_count_dict.get(topic, 0) + 1
+        return self._msg_count_dict
+
     # __iter__ should be implemented by collections.abc.Iterator.
     def __iter__(self): return self
     

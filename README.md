@@ -151,3 +151,21 @@ recommended that the ROS2 API be used for decoding bag files wherever possible.
 [sourcing the ROS2 environment]: https://docs.ros.org/en/galactic/Tutorials/Workspace/Creating-A-Workspace.html#source-ros-2-environment
 
 
+
+
+ Notes from Reader class
+    -----
+    
+    In the current version of the ROS2 bag package, ``seek`` functionality has 
+    not yet been implemented_. Until this is implemented, we recommend opening 
+    a new :py:class`Reader` each time the position is to be reset.
+    
+    .. todo: Consider deriving this class from Iterator_ of the 
+             `collections.abc` package. Multiple inheritence and the ABC 
+             metaclass will conflict, so perhaps it should be distinct.
+    
+    .. _implemented: https://github.com/ros2/rosbag2/blob
+                     /fada54cc2c93d4238f3971e9ce6ea0006ac85c8c/rosbag2_cpp
+                     /src/rosbag2_cpp/readers/sequential_reader.cpp#L198
+    .. _Iterator: https://docs.python.org/3/library
+                  /collections.abc.html#collections-abstract-base-classes
