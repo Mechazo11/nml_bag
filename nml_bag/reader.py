@@ -1,33 +1,23 @@
 """ 
 
-Functionality for reading ROS2 bag files.
+ROS2 facilitates data recording and playback via bag_ files. 
 
-ROS2 facilitates data recording and playback via bag_ files. This package 
-provides functionality for extracting data stored in bag files, and translating 
+This package provides functionality for extracting data stored in bag files, and translating 
 it into Python builtin data types.
 
-.. _bag: https://docs.ros.org/en/galactic/Tutorials/Ros2bag
-         /Recording-And-Playing-Back-Data.html)
+Copyright 2022 Carnegie Mellon University Neuromechatronics Lab
 
-Notes
------
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-Although the sqlite3_ package is part of the standard distribution of 
-Python 3 -- and it can be used to directly read from bag files -- it is 
-recommended that the ROS2 API be used for decoding bag files wherever possible.
+Contact: a.whit (nml@whit.contact)
 
-.. _sqlite3: https://docs.python.org/3/library/sqlite3.html
+Additional features such as recording message count on a topic-by-topic basis etc. by 
+Azmyin Md. Kamal
+Ph.D. student in Mechanical Engineering, iCORE Lab, Louisiana State University
 
-"""
-
-# Copyright 2022 Carnegie Mellon University Neuromechatronics Lab
-# 
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
-# Contact: a.whit (nml@whit.contact)
-
+"""  # noqa: D213
 
 # Import collection interfaces.
 from collections.abc import Iterator
@@ -185,13 +175,14 @@ class Reader(SequentialReader):
     def get_msg_count(self):
         """For the given topics, count and return number of messages as a dictionary"""
         
-        self._msg_count_dict = {}  # Reset the dictionary
+        # self._msg_count_dict = {}  # Reset the dictionary
         # Iterate through all messages
         while self.has_next():
             (topic, _, _) = self.read_next()
             if topic in self.topics_list:
                 self._msg_count_dict[topic] = self._msg_count_dict.get(topic, 0) + 1
-        return self._msg_count_dict
+        
+        # return self._msg_count_dict
 
     # __iter__ should be implemented by collections.abc.Iterator.
     def __iter__(self): return self
